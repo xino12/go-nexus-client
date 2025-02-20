@@ -1,4 +1,4 @@
-package npm
+package cargo
 
 import (
 	"math/rand"
@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func getTestNpmProxyRepository(name string) repository.NpmProxyRepository {
-	return repository.NpmProxyRepository{
+func getTestCargoProxyRepository(name string) repository.CargoProxyRepository {
+	return repository.CargoProxyRepository{
 		Name:   name,
 		Online: true,
 		HTTPClient: repository.HTTPClient{
@@ -20,10 +20,6 @@ func getTestNpmProxyRepository(name string) repository.NpmProxyRepository {
 			Connection: &repository.HTTPClientConnection{
 				Timeout:       tools.GetIntPointer(20),
 				UseTrustStore: tools.GetBoolPointer(true),
-			},
-			Authentication: &repository.HTTPClientAuthentication{
-				Type:        repository.HTTPClientAuthenticationTypeBearerToken,
-				BearerToken: "test-token",
 			},
 		},
 		NegativeCache: repository.NegativeCache{
@@ -39,17 +35,12 @@ func getTestNpmProxyRepository(name string) repository.NpmProxyRepository {
 			BlobStoreName:               "default",
 			StrictContentTypeValidation: true,
 		},
-
-		Npm: &repository.Npm{
-			RemoveNonCataloged: false, // deprecated since nexus 3.66.0
-			RemoveQuarantined:  true,
-		},
 	}
 }
 
-func TestNpmProxyRepository(t *testing.T) {
+func TestCargoProxyRepository(t *testing.T) {
 	service := getTestService()
-	repo := getTestNpmProxyRepository("test-npm-repo-hosted-" + strconv.Itoa(rand.Intn(1024)))
+	repo := getTestCargoProxyRepository("test-cargo-repo-proxy-" + strconv.Itoa(rand.Intn(1024)))
 
 	err := service.Proxy.Create(repo)
 	assert.Nil(t, err)
@@ -63,18 +54,15 @@ func TestNpmProxyRepository(t *testing.T) {
 	assert.Equal(t, repo.NegativeCache, generatedRepo.NegativeCache)
 	assert.Equal(t, repo.Proxy, generatedRepo.Proxy)
 	assert.Equal(t, repo.Storage, generatedRepo.Storage)
-	assert.Equal(t, repo.Npm, generatedRepo.Npm)
 
 	updatedRepo := repo
 	updatedRepo.Online = false
-	updatedRepo.RemoveQuarantined = false
 
 	err = service.Proxy.Update(repo.Name, updatedRepo)
 	assert.Nil(t, err)
 	generatedRepo, err = service.Proxy.Get(updatedRepo.Name)
 	assert.Nil(t, err)
 	assert.Equal(t, updatedRepo.Online, generatedRepo.Online)
-	assert.Equal(t, updatedRepo.RemoveQuarantined, generatedRepo.RemoveQuarantined)
 
 	service.Proxy.Delete(repo.Name)
 	assert.Nil(t, err)
